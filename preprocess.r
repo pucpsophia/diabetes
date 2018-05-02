@@ -4,8 +4,22 @@ install.packages("dplyr")
 install.packages("ggplot2")
 install.packages("corrplot")
 install.packages("descr")
+install.packages("car")
+install.packages("MASS")
+install.packages("caret")
+install.packages("glmnet")
+install.packages("BLR")
+install.packages("lars")
+install.packages("corrplot")
 
-
+library(corrplot)
+library(lars)
+library(BLR)
+library(glmnet)
+library(caret)
+library(MASS)
+library(car)
+library(stats) 
 library(descr)
 library(corrplot)
 library(ggplot2)
@@ -13,22 +27,90 @@ library(dplyr)
 library(psych)
 library(pastecs)
 
-# setwd(dir = "/Users/gvalderrama/Documents/Studio/diabetes")
-setwd(dir = "/Users/gregory/Documents/pucp/diabetes")
+setwd(dir = "/Users/gvalderrama/Documents/Studio/diabetes")
+#setwd(dir = "/Users/gregory/Documents/pucp/diabetes")
 #setwd(dir = "f://diabetes")
 
 data <- read.csv(file="data.csv", header=TRUE, sep=",", 
                  colClasses = c("character"))
 
-head(data)
+data$EDAD <- as.numeric(data$EDAD)
+data$TIEMPODIAG <- as.numeric(data$TIEMPODIAG)
+data$PESO <- as.numeric(data$PESO)
+data$TALLA <- as.numeric(data$TALLA)
+data$IMC <- as.numeric(data$IMC)
+data$HEMOGLOBINA <- as.numeric(data$HEMOGLOBINA)
+data$GLICOSILADA <- as.numeric(data$GLICOSILADA)
+data$TRIGLICERIDOS <- as.numeric(data$TRIGLICERIDOS)
+data$COLESTEROL <- as.numeric(data$COLESTEROL)
+data$HDL <- as.numeric(data$HDL)
+data$ALBUMINA <- as.numeric(data$ALBUMINA)
+data$BUN <- as.numeric(data$BUN)
+data$UREA <- as.numeric(data$UREA)
+data$CREATININA <- as.numeric(data$CREATININA)
+data$TFGCKD <- as.numeric(data$TFGCKD)
+data$TFGMDRD <- as.numeric(data$TFGMDRD)
+
 dim(data)
-describe(data)
-stat.desc(data)
+str(data)
+names(data)
+head(data)
+summary(data)
+
+#TFG = EDAD , SEXO, CRERATENINA
+# filter(data, SEXO == "F")
+data_selected <- select(data, -(EDAD), -(PESO) , - (TALLA), -(ALIAS), -(SEXO), -(ECIVIL), -(TRATAMIENTO), -(HTA), -(PIEDIABETICO), -(TFGMDRD), -(CREATININA))
+describe(data_selected)
+names(data_selected)
+colnames(data_selected) <- c("TIE", "IMC", "HEMO", "GLI", "TRI", "COL", "HDL", "ALB","BUN", "URE",  "TFG" )
 
 
-filter(data, SEXO == "F")
-data_a <- select(data, -(TFG))
-head(data_a)
+#transformar datos entre 0 y 1 
+max_data <- as.vector(apply(data_selected, 2, max))
+min_data <- as.array(apply(data_selected, 2, min))
+
+data_scaled <- as.data.frame(scale(data_selected,center = min_data, scale = max_data - min_data))
+boxplot(data_scaled)
+#correlaciones
+cor(data_scaled)
+# las columnas con mayor corelacion lineal 
+hist(data_scaled$TFG)
+hist(data_scaled$BUN)
+hist(data_scaled$GLI)
+hist(data_scaled$HEMO)
+hist(data_scaled$IMC)
+
+plot(data_scaled$URE , data_scaled$TFG)
+plot(data_scaled$BUN , data_scaled$TFG)
+plot(data_scaled$GLI , data_scaled$TFG)
+plot(data_scaled$HEMO , data_scaled$TFG)
+plot(data_scaled$IMC , data_scaled$TFG)
+
+lm_URE_TFG = lm(  data_scaled$TFG ~ data_scaled$URE , data = data_scaled)
+summary(lm_URE_TFG)
+plot(data_scaled$URE , data_scaled$TFG)
+abline(lm_URE_TFG)
+
+par(mfrow=c(2,2))
+plot(lm_URE_TFG)
+
+par(mfrow=c(1,1))
+plot(lm_URE_TFG,which=5)
+
+
+
+lm_BUN_TFG = lm(  data_scaled$TFG ~ data_scaled$BUN , data = data_scaled)
+summary(lm_BUN_TFG)
+plot(data_scaled$BUN , data_scaled$TFG, cex = 1.3,lwd = 2)
+abline(lm_BUN_TFG,lwd=3)
+
+
+
+names(lm_URE_TFG$coefficients)
+stem(lm_URE_TFG$residuals)
+abline(a=0,b=0)
+stem(Residual)
+
 
 distinct( select (data, ECIVIL))
 distinct( select (data, TRATAMIENTO))
@@ -54,7 +136,7 @@ final_data = data.frame(ALIAS = as.character(data$ALIAS),
                         TIEMPODM = as.numeric(data$TIEMPODM),
                         PESO = as.numeric(data$PESO),
                         TALLA = as.numeric(data$TALLA)
-                        )
+)
 
 head(final_data)
 
