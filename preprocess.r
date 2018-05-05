@@ -11,6 +11,10 @@ install.packages("glmnet")
 install.packages("BLR")
 install.packages("lars")
 install.packages("corrplot")
+install.packages("ggpubr")
+install.packages("GGally")
+install.packages("BCA")
+install.packages("backports")
 
 library(corrplot)
 library(lars)
@@ -26,10 +30,14 @@ library(ggplot2)
 library(dplyr)
 library(psych)
 library(pastecs)
+library(dplyr)
+library(ggpubr)
+library(GGally)
 
-setwd(dir = "/Users/gvalderrama/Documents/Studio/diabetes")
-#setwd(dir = "/Users/gregory/Documents/pucp/diabetes")
-#setwd(dir = "f://diabetes")
+
+# setwd(dir = "/Users/gvalderrama/Documents/Studio/diabetes")
+# setwd(dir = "/Users/gregory/Documents/pucp/diabetes")
+setwd(dir = "f://diabetes")
 
 data <- read.csv(file="data.csv", header=TRUE, sep=",", 
                  colClasses = c("character"))
@@ -60,17 +68,31 @@ summary(data)
 #TFG = EDAD , SEXO, CRERATENINA
 # filter(data, SEXO == "F")
 data_selected <- select(data, -(EDAD), -(PESO) , - (TALLA), -(ALIAS), -(SEXO), -(ECIVIL), -(TRATAMIENTO), -(HTA), -(PIEDIABETICO), -(TFGMDRD), -(CREATININA))
+data_selected_extend <- select(data, -(EDAD), -(PESO) , - (TALLA), -(ALIAS), -(SEXO), -(TRATAMIENTO), -(HTA), -(PIEDIABETICO), -(TFGMDRD), -(CREATININA))
 describe(data_selected)
 names(data_selected)
 colnames(data_selected) <- c("TIE", "IMC", "HEMO", "GLI", "TRI", "COL", "HDL", "ALB","BUN", "URE",  "TFG" )
 
+ggdensity(data_selected$TIE, main = "Densidad de tiempo diagnostico",xlab = "Tiempo Diagnostico")
+ggqqplot(data_selected$TIE)
+shapiro.test(data_selected$TIE)
+ggdensity(data_selected$IMC, main = "Densidad de tiempo diagnostico",xlab = "Tiempo Diagnostico")
+ggqqplot(data_selected$IMC)
+ggdensity(data_selected$BUN, main = "Densidad de tiempo diagnostico",xlab = "Tiempo Diagnostico")
+ggqqplot(data_selected$BUN)
 
-#transformar datos entre 0 y 1 
-max_data <- as.vector(apply(data_selected, 2, max))
-min_data <- as.array(apply(data_selected, 2, min))
 
-data_scaled <- as.data.frame(scale(data_selected,center = min_data, scale = max_data - min_data))
+
+
+# z standarization para una mejor visualizacion 
+
+data_scaled <- as.data.frame(scale(data_selected))
+
 boxplot(data_scaled)
+
+boxplot.stats(data_scaled$TIE)
+
+
 #correlaciones
 cor(data_scaled)
 # las columnas con mayor corelacion lineal 
@@ -81,10 +103,43 @@ hist(data_scaled$HEMO)
 hist(data_scaled$IMC)
 
 plot(data_scaled$URE , data_scaled$TFG)
-plot(data_scaled$BUN , data_scaled$TFG)
+
+ggplot(data_selected, aes( x = BUN, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
+ggpairs(data_selected) # cor  + graph 
+
+
+names(data_selected_extend)
+table(data_selected_extend$ECIVIL)
+ggpairs(data_selected_extend , title="Casado R Soltero G",  mapping=ggplot2::aes(colour = ECIVIL)) # cor  + graph 
+
+
+
+
+plot(data_selected$BUN , data_selected$TFG)
+abline(lm(TFG ~ BUN, data =  data_selected), col="red") #regresion line
+lines(lowess(data_selected$BUN, data_selected$TFG ), col="blue") #polynomial regresion
+
+
+scatterplot(TFGCKD ~ BUN, data = data_selected_extend)
+
+pairs(~TFG + BUN + HEMO , data = data_selected,  main = "simple" )
+scatterplotMatrix(~TFG + BUN + HEMO , data = data_selected,  main = "simple" )
+
+
+
 plot(data_scaled$GLI , data_scaled$TFG)
 plot(data_scaled$HEMO , data_scaled$TFG)
 plot(data_scaled$IMC , data_scaled$TFG)
+
+
+#exploracion stepwise 
+
+Lm1 <- lm(TFG ~ ., data = data_selected)
+summary(Lm1)
+Slm1 <- step(Lm1)
+summary(Slm1)
+Slm1$anova
+
 
 lm_URE_TFG = lm(  data_scaled$TFG ~ data_scaled$URE , data = data_scaled)
 summary(lm_URE_TFG)
