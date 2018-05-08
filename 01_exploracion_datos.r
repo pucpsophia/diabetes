@@ -138,7 +138,7 @@ table(round(colineal, 2))["1"] #  si es mayor al numero de columnas hay colineal
 
 data_non_colineal <- select(data_selected, -URE )
 
-Rplot01
+
 # correlation Pearson  y seleccion de regresores
 
 ggpairs(data_non_colineal) # cor(data_scaled)
@@ -151,7 +151,24 @@ correlacion =as.table(abs(cor(data_non_colineal)))
 ggplot(data_non_colineal, aes( x = BUN, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
 lm_tfg_bun = lm(TFG~BUN, data = data_non_colineal)
 summary(lm_tfg_bun) # 
-coefficients(lm_tfg_bun)
+
+par(mfrow=c(2,2)) # Change the panel layout to 2 x 2
+plot(lm_tfg_bun)
+par(mfrow=c(1,1)) # Change back to 1 x 1
+
+shapiro.test(lm_tfg_bun$residuals)
+
+qqPlot(lm_tfg_bun)
+# distribution of studentized residuals
+library(MASS)
+residuos <- studres(lm_tfg_bun) 
+hist(residuos, freq=FALSE, main="")
+xfit<-seq(min(residuos),max(residuos),length=40) 
+yfit<-dnorm(xfit) 
+lines(xfit, yfit)
+
+ncvTest(lm_tfg_bun)
+
 
 min(data_non_colineal$BUN)
 max(data_non_colineal$BUN)
@@ -160,7 +177,7 @@ max(data_non_colineal$BUN)
 ggplot(data_non_colineal, aes( x = HEMO, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
 lm_tfg_hemo = lm( TFG ~ HEMO, data = data_non_colineal)
 summary(lm_tfg_hemo) # p value superior a 0.5 y R Square bajo descartamos esta regresion simple
-
+shapiro.test(lm_tfg_hemo$residuals)
 min(data_non_colineal$HEMO)
 max(data_non_colineal$HEMO)
 
@@ -168,7 +185,7 @@ max(data_non_colineal$HEMO)
 ggplot(data_non_colineal, aes( x = GLI, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
 lm_tfg_gli = lm(TFG~GLI, data = data_non_colineal)
 summary(lm_tfg_gli) # p value superior a 0.5 y R Square bajo descartamos esta regresion simple
-
+shapiro.test(lm_tfg_gli$residuals)
 
 # utilizacion step wise
 
@@ -185,7 +202,12 @@ summary(lm_forward) # BUN COL HEMO HDL, R2  = 0.838
 
 lm_both <- step(lm_null,scope =list(upper=lm_full), direction = "both")
 summary(lm_both) # BUN COL HEMO HDL, R2 = 0.838
+shapiro.test(lm_both$residuals)
+ncvTest(lm_both)
 
+par(mfrow=c(2,2)) # Change the panel layout to 2 x 2
+plot(lm_both)
+par(mfrow=c(1,1)) # Change back to 1 x 1
 
 # NOTA correlacion "COL" "TRI" "TFG" "URE" , step wise analysis URE COL HEMO HDL
 
@@ -195,41 +217,25 @@ lm_final = lm(TFG~BUN, data = data_non_colineal)
 summary(lm_final) # R2 0.726
 
 
-lm_final_mod_col = lm(TFG~BUN + COL, data = data_non_colineal)
-summary(lm_final_mod_col) # R2 0.81
-anova(lm_final, lm_final_mod_col) # significancia menor a 0.5 por lo que si hay diferencia 
+lm_final_full = lm(TFG~BUN + COL + HEMO + HDL, data = data_non_colineal)
+summary(lm_final_full) # R2 0.81
 
-lm_final_mode_TRI = lm(TFG~ BUN + TRI, data = data_non_colineal)
-summary(lm_final_mode_TRI) # R2 0.7521
-anova(lm_final, lm_final_mode_TRI) # significancia mayor a 0.5 
+lm_final_full_n_hdl = lm(TFG~BUN + COL + HEMO, data = data_non_colineal)
+summary(lm_final_full_n_hdl) # R2 0.81
 
+anova(lm_final_full, lm_final_full_n_hdl) # significancia menor a 0.5 por lo que si hay diferencia 
+shapiro.test(lm_final_full_n_hdl$residuals)
+ncvTest(lm_final_full_n_hdl)
 
-lm_final_mode_HDL = lm(TFG ~ BUN + HDL, data = data_non_colineal)
-summary(lm_final_mode_HDL) # R2 0.7684
-anova(lm_final, lm_final_mode_HDL) # significancia menor a 0.5 por lo que si hay diferencia 
+lm_final_full_n_HEMO = lm(TFG~BUN + COL, data = data_non_colineal)
+anova(lm_final_full_n_hdl, lm_final_full_n_HEMO) # R2 0.81
+summary(lm_final_full_n_HEMO) # R2 0.81
 
-
-lm_final_mode_HEMO = lm(TFG~ BUN + HEMO, data = data_non_colineal)
-summary(lm_final_mode_HEMO) # R2 0.74
-anova(lm_final, lm_final_mode_HEMO) # significancia menor a 0.5 por lo que si hay diferencia 
-
-
-lm_final_mod_col_hdl = lm(TFG ~ BUN + COL + HDL , data = data_non_colineal)
-summary(lm_final_mod_col_hdl) # R2 0.8206
-anova(lm_final_mod_col, lm_final_mod_col_hdl) # sing 0.28
-
-lm_final_mod_col_hdl_hemo = lm(TFG ~ BUN + COL + HDL + HEMO, data = data_non_colineal)
-summary(lm_final_mod_col_hdl_hemo) # R2 0.8364
-anova(lm_final_mod_col_hdl, lm_final_mod_col_hdl_hemo) # significancia 0.072
-
-
-
-# por lo tanto las variables que mejor explican nuestra variabel dependiente son 
-
-lm_tfg_model = lm(TFG ~ BUN + COL, data = data_non_colineal)
+shapiro.test(lm_final_full_n_HEMO$residuals)
+ncvTest(lm_final_full_n_HEMO)
 
 par(mfrow=c(2,2)) # Change the panel layout to 2 x 2
-plot(lm_tfg_model)
+plot(lm_final_full_n_HEMO)
 par(mfrow=c(1,1)) # Change back to 1 x 1
 
 # pruebas de bondad
@@ -238,8 +244,12 @@ par(mfrow=c(1,1)) # Change back to 1 x 1
 
 #Outliers
 # no idea outlierTest(lm_tfg_model) # Bonferonni p-value for most extreme obs
-qqPlot(lm_tfg_model, main="QQ Plot Residious") #qq plot for studentized resid 
-leveragePlots(lm_tfg_model) # leverage plots
+
+lm_tfg_model = lm(TFG ~ BUN + COL, data = data_non_colineal)
+
+qqPlot(lm_tfg_model, main="") #qq plot for studentized resid
+
+leveragePlots(lm_tfg_model, main="") # leverage plots
 
 # Influential Observations
 # added variable plots 
@@ -254,15 +264,13 @@ influencePlot(lm_tfg_model,	id.method="identify", main="Influence Plot", sub="Ci
 
 # interesante para ver si removiendo los valores extremos mejora el resultado 
 
-
-
 # Normality of Residuals
 # qq plot for studentized resid
 qqPlot(lm_tfg_model, main="QQ Plot")
 # distribution of studentized residuals
 library(MASS)
 sresid <- studres(lm_tfg_model) 
-hist(sresid, freq=FALSE, main="Distribution of Studentized Residuals")
+hist(sresid, freq=FALSE, main="Distribucion de los residuos")
 xfit<-seq(min(sresid),max(sresid),length=40) 
 yfit<-dnorm(xfit) 
 lines(xfit, yfit)
@@ -288,8 +296,6 @@ crPlots(lm_tfg_model)
 # Ceres plots 
 ceresPlots(lm_tfg_model)
 
-ks.test(lm_tfg_model$residuals, pnorm, mean(lm_tfg_model$residuals), sd(lm_tfg_model$residuals))
-shapiro.test(lm_tfg_model$residuals)
 
 # Test for Autocorrelated Errors
 durbinWatsonTest(lm_tfg_model)
@@ -309,10 +315,9 @@ names(data)
 
 str(data)
 
-lm_tfg__categorical = lm(TFGCKD ~ BUN + COLESTEROL  , data = data)
-lm_tfg__categorical_sexo = lm(TFGCKD ~ BUN + COLESTEROL + TRATAMIENTO  , data = data)
-anova(lm_tfg__categorical, lm_tfg__categorical_sexo)
-
+lm_tfg__categorical = lm(TFGCKD ~ BUN + COLESTEROL, data = data)
+lm_tfg__tratamiento = lm(TFGCKD ~ BUN + COLESTEROL + TRATAMIENTO  , data = data)
+anova(lm_tfg__categorical, lm_tfg__tratamiento)
 
 lm_tfg__categorical = lm(TFGCKD ~ BUN + COLESTEROL  , data = data)
 lm_tfg__categorical_sexo = lm(TFGCKD ~ BUN + COLESTEROL + SEXO  , data = data)
@@ -320,11 +325,23 @@ anova(lm_tfg__categorical, lm_tfg__categorical_sexo)
 
 
 lm_tfg__categorical = lm(TFGCKD ~ BUN + COLESTEROL  , data = data)
-lm_tfg__categorical_sexo = lm(TFGCKD ~ BUN + COLESTEROL + PIEDIABETICO  , data = data)
-anova(lm_tfg__categorical, lm_tfg__categorical_sexo)
+lm_tfg__categorical_pie = lm(TFGCKD ~ BUN + COLESTEROL + PIEDIABETICO  , data = data)
+anova(lm_tfg__categorical, lm_tfg__categorical_pie)
 
-summary(lm_tfg__categorical_sexo)
-gvmodel <- gvlma(lm_tfg__categorical) 
+summary(lm_tfg__categorical_pie)
+
+
+par(mfrow=c(2,2)) # Change the panel layout to 2 x 2
+plot(lm_tfg__categorical_pie)
+par(mfrow=c(1,1)) # Change back to 1 x 1
+
+
+
+shapiro.test(lm_tfg__categorical_pie$residuals)
+ncvTest(lm_tfg__categorical_pie)
+durbinWatsonTest(lm_tfg__categorical_pie)
+
+gvmodel <- gvlma(lm_tfg__categorical_pie) 
 summary(gvmodel)
 
 
