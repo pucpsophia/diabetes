@@ -1,3 +1,46 @@
+# dependencies 
+
+install.packages("psych")
+install.packages("pastecs")
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("corrplot")
+install.packages("descr")
+install.packages("car")
+install.packages("MASS")
+install.packages("caret")
+install.packages("glmnet")
+install.packages("BLR")
+install.packages("lars")
+install.packages("corrplot")
+install.packages("ggpubr")
+install.packages("GGally")
+install.packages("BCA")
+install.packages("backports")
+
+library(corrplot)
+library(lars)
+library(BLR)
+library(glmnet)
+library(caret)
+library(MASS)
+library(car)
+library(stats) 
+library(descr)
+library(corrplot)
+library(ggplot2)
+library(dplyr)
+library(psych)
+library(pastecs)
+library(dplyr)
+library(ggpubr)
+library(GGally)
+library(lmtest)
+library(gvlma)
+library(MASS)
+
+# Load data , please set the folder 
+
 setwd(dir = "f://diabetes")
 
 data <- read.csv(file="data.csv", header=TRUE, sep=",", colClasses = c("character"))
@@ -5,15 +48,15 @@ data <- read.csv(file="data.csv", header=TRUE, sep=",", colClasses = c("characte
 names(data)
 head(data)
 
-# categorical 
-
+# categorical columns 
 data$SEXO  <- as.factor(data$SEXO)
 data$ECIVIL  <- as.factor(data$ECIVIL)
 data$TRATAMIENTO  <- as.factor(data$TRATAMIENTO)
 data$PIEDIABETICO  <- as.factor(data$PIEDIABETICO)
 data$HTA  <- as.factor(data$HTA)
 
-# numeric continuos 
+# numeric columns 
+
 data$EDAD <- as.numeric(data$EDAD)
 data$TIEMPODIAG <- as.numeric(data$TIEMPODIAG)
 data$PESO <- as.numeric(data$PESO)
@@ -35,21 +78,29 @@ data$TFGMDRD <- as.numeric(data$TFGMDRD)
 dim(data) # 30 row , 22 columns
 str(data)
 
+# select only numeric columns for initial analisis 
+
 data_selected <- select(data, -EDAD,-PESO,-TALLA,-ALIAS,-SEXO,-ECIVIL,-TRATAMIENTO,-HTA,-PIEDIABETICO,-TFGMDRD,-CREATININA)
+
 names(data_selected)
-# rename columns to nice graph
+# rename columns to generate a nice graphs 
+
 colnames(data_selected) <- c("TIE", "IMC", "HEMO", "GLI", "TRI", "COL", "HDL", "ALB","BUN", "URE",  "TFG" )
+
 
 describe(data_selected) # summary(data_selected)
 
 # scale to have a nice graph
 data_scaled <- as.data.frame(scale(data_selected))
+
+# box plot the data distribution 
+
 boxplot(data_scaled)
 
 # deteccion outliers 
 boxplot.stats(data_selected$TIE)
 
-
+# generate pie chart to categorical variables 
 
 par(mfrow=c(2,3)) 
 
@@ -61,7 +112,6 @@ lbls <- c(
   paste("Solteros", "\n" , solteros, sep="") 
 )
 pie(slices, labels = lbls, col =  c("#7FDBFF", "#B10DC9"))
-
 
 insulina = length(which(data$TRATAMIENTO == "INSULINA"))
 metformina = length(which(data$TRATAMIENTO == "ADO"))
@@ -102,6 +152,7 @@ pie(slices, labels = lbls, col =  c("#7FDBFF", "#01FF70"))
 
 par(mfrow=c(1,1)) 
 
+# histogram views to numeric variables 
 
 hist(data$EDAD, col="#39CCCC", main="", xlab="Edad en años", ylab="Frecuencia")
 hist(data$TIEMPODIAG, col="#39CCCC", main="", xlab="Años diagnostico", ylab="Frecuencia")
@@ -118,76 +169,96 @@ hist(data$UREA, col="#39CCCC", main="", xlab="UREA (mg/dL)", ylab="Frecuencia")
 hist(data$CREATININA, col="#39CCCC", main="", xlab="Creatinina (mg/dL)", ylab="Frecuencia")
 
 
-
-
-
-
 "
-La colinealidad indica smi en el modelo alguna variable independiente es
-combinación lineal de otras.
+La colinealidad indica si en el modelo alguna variable independiente es combinación lineal de otras.
 http://www.hrc.es/bioest/Reglin_15.html
 http://analisisydecision.es/tag/vif/
 https://www.statmethods.net/stats/rdiagnostics.html
 "
 ggpairs(data_selected[,-11] ) 
 
-colineal <- abs(cor(data_selected[,-11]))
-
-dim(colineal)
-table(round(colineal, 2))["1"] #  si es mayor al numero de columnas hay colinealidad y se debe remover esa variable
+# remove URE varibale because has colineality with BUN
 
 data_non_colineal <- select(data_selected, -URE )
 
 
-# correlation Pearson  y seleccion de regresores
+# analize correlation between independ variables and depend variables 
 
 ggpairs(data_non_colineal) # cor(data_scaled)
-correlacion =as.table(abs(cor(data_non_colineal)))  
 
 # BUN, HEMO, GLI
 
+#  ========================== simple lineal regrasion tfg - bun
 
-# regresion lineal simple - bun
 ggplot(data_non_colineal, aes( x = BUN, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
 lm_tfg_bun = lm(TFG~BUN, data = data_non_colineal)
-summary(lm_tfg_bun) # 
+summary(lm_tfg_bun) 
 
-par(mfrow=c(2,2)) # Change the panel layout to 2 x 2
+par(mfrow=c(2,2)) 
 plot(lm_tfg_bun)
-par(mfrow=c(1,1)) # Change back to 1 x 1
+par(mfrow=c(1,1)) 
+
+# normal test of residuals for less than 30 elements ; p-value > 0.05 es normal
 
 shapiro.test(lm_tfg_bun$residuals)
 
+# qq plot of residuals 
+
 qqPlot(lm_tfg_bun)
+
 # distribution of studentized residuals
-library(MASS)
 residuos <- studres(lm_tfg_bun) 
 hist(residuos, freq=FALSE, main="")
 xfit<-seq(min(residuos),max(residuos),length=40) 
 yfit<-dnorm(xfit) 
 lines(xfit, yfit)
 
-ncvTest(lm_tfg_bun)
+# Breusch-Pagan test. p-value > 0.05 homosedasticity 
+ncvTest(lm_tfg_bun)  
+
+#  ========================================================================
 
 
-min(data_non_colineal$BUN)
-max(data_non_colineal$BUN)
-
+#  ========================== simple lineal regrasion tfg - HEMO
 
 ggplot(data_non_colineal, aes( x = HEMO, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
 lm_tfg_hemo = lm( TFG ~ HEMO, data = data_non_colineal)
 summary(lm_tfg_hemo) # p value superior a 0.5 y R Square bajo descartamos esta regresion simple
-shapiro.test(lm_tfg_hemo$residuals)
-min(data_non_colineal$HEMO)
-max(data_non_colineal$HEMO)
 
+# normal test of residuals for less than 30 elements
+shapiro.test(lm_tfg_hemo$residuals) # ; p-value > 0.05 es normal
+# Breusch-Pagan test. p-value > 0.05 homosedasticity 
+ncvTest(lm_tfg_bun)  
+
+# distribution of studentized residuals
+residuos <- studres(lm_tfg_bun) 
+hist(residuos, freq=FALSE, main="")
+xfit<-seq(min(residuos),max(residuos),length=40) 
+yfit<-dnorm(xfit) 
+lines(xfit, yfit)
+
+
+#  ========================================================================
+
+#  ========================== simple lineal regrasion TFG - GLI
 
 ggplot(data_non_colineal, aes( x = GLI, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
 lm_tfg_gli = lm(TFG~GLI, data = data_non_colineal)
 summary(lm_tfg_gli) # p value superior a 0.5 y R Square bajo descartamos esta regresion simple
-shapiro.test(lm_tfg_gli$residuals)
 
-# utilizacion step wise
+
+# normal test of residuals for less than 30 elements
+shapiro.test(lm_tfg_gli$residuals) #  ; p-value > 0.05 es normal
+# Breusch-Pagan test. p-value > 0.05 homosedasticity 
+ncvTest(lm_tfg_gli)  
+
+#  ========================================================================
+
+
+#  ========================== multi lineal  regrasion TFG  
+
+
+# step wise utilization
 
 lm_full  <- lm(TFG ~ ., data = data_non_colineal)
 lm_null  <- lm(TFG ~ 1, data = data_non_colineal)
@@ -197,42 +268,44 @@ lm_null  <- lm(TFG ~ 1, data = data_non_colineal)
 lm_backward <- step(lm_full, direction= "backward")
 summary(lm_backward) # HEMO, COL, HDL, BUN ,  R2 = 0.838
 
+
 lm_forward <- step(lm_null,scope =list(lower= lm_null, upper=lm_full), direction = "forward")
 summary(lm_forward) # BUN COL HEMO HDL, R2  = 0.838
 
+
 lm_both <- step(lm_null,scope =list(upper=lm_full), direction = "both")
 summary(lm_both) # BUN COL HEMO HDL, R2 = 0.838
-shapiro.test(lm_both$residuals)
-ncvTest(lm_both)
+
+
 
 par(mfrow=c(2,2)) # Change the panel layout to 2 x 2
 plot(lm_both)
 par(mfrow=c(1,1)) # Change back to 1 x 1
 
-# NOTA correlacion "COL" "TRI" "TFG" "URE" , step wise analysis URE COL HEMO HDL
 
-# simplificacion del modelo para la interpretacion 
+# we must reduce the number of variabnles in the model to guarantee the best mean of the independ variable againts depend variable.
 
-lm_final = lm(TFG~BUN, data = data_non_colineal)
+lm_final = lm(TFG ~ BUN, data = data_non_colineal)
 summary(lm_final) # R2 0.726
 
-
-lm_final_full = lm(TFG~BUN + COL + HEMO + HDL, data = data_non_colineal)
+lm_final_full = lm(TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
 summary(lm_final_full) # R2 0.81
 
 lm_final_full_n_hdl = lm(TFG~BUN + COL + HEMO, data = data_non_colineal)
 summary(lm_final_full_n_hdl) # R2 0.81
 
 anova(lm_final_full, lm_final_full_n_hdl) # significancia menor a 0.5 por lo que si hay diferencia 
-shapiro.test(lm_final_full_n_hdl$residuals)
-ncvTest(lm_final_full_n_hdl)
 
-lm_final_full_n_HEMO = lm(TFG~BUN + COL, data = data_non_colineal)
+shapiro.test(lm_final_full_n_hdl$residuals) # ; p-value > 0.05 es normal
+
+ncvTest(lm_final_full_n_hdl) # Breusch-Pagan test. p-value > 0.05 homosedasticity 
+
+lm_final_full_n_HEMO = lm(TFG ~ BUN + COL, data = data_non_colineal)
 anova(lm_final_full_n_hdl, lm_final_full_n_HEMO) # R2 0.81
 summary(lm_final_full_n_HEMO) # R2 0.81
 
 shapiro.test(lm_final_full_n_HEMO$residuals)
-ncvTest(lm_final_full_n_HEMO)
+ncvTest(lm_final_full_n_HEMOO)
 
 par(mfrow=c(2,2)) # Change the panel layout to 2 x 2
 plot(lm_final_full_n_HEMO)
@@ -242,8 +315,6 @@ par(mfrow=c(1,1)) # Change back to 1 x 1
 #http://data.library.virginia.edu/diagnostic-plots/
 #https://www.statmethods.net/stats/rdiagnostics.html
 
-#Outliers
-# no idea outlierTest(lm_tfg_model) # Bonferonni p-value for most extreme obs
 
 lm_tfg_model = lm(TFG ~ BUN + COL, data = data_non_colineal)
 
@@ -251,22 +322,22 @@ qqPlot(lm_tfg_model, main="") #qq plot for studentized resid
 
 leveragePlots(lm_tfg_model, main="") # leverage plots
 
-# Influential Observations
-# added variable plots 
-# av.Plots(lm_tfg_model)
-# Cook's D plot
+
+# Influential Observations added variable plots 
+# av.Plots(lm_tfg_model) Cook's D plot
 # identify D values > 4/(n-k-1) 
 cutoff <- 4/((nrow(data_non_colineal)-length(lm_tfg_model$coefficients)-2)) 
 plot(lm_tfg_model, which=4, cook.levels=cutoff)
+
 # Influence Plot 
 # Data points with large residuals (outliers) and/or high leverage may distort the outcome and accuracy of a regression. Cook's distance measures the effect of deleting a given observation. Points with a large Cook's distance are considered to merit closer examination in the analysis.
+
 influencePlot(lm_tfg_model,	id.method="identify", main="Influence Plot", sub="Circle size is proportial to Cook's Distance" )
 
-# interesante para ver si removiendo los valores extremos mejora el resultado 
-
-# Normality of Residuals
+# Normality of Residuals 
 # qq plot for studentized resid
 qqPlot(lm_tfg_model, main="QQ Plot")
+
 # distribution of studentized residuals
 library(MASS)
 sresid <- studres(lm_tfg_model) 
@@ -274,9 +345,6 @@ hist(sresid, freq=FALSE, main="Distribucion de los residuos")
 xfit<-seq(min(sresid),max(sresid),length=40) 
 yfit<-dnorm(xfit) 
 lines(xfit, yfit)
-
-
-
 
 # Evaluate homoscedasticity
 # non-constant error variance test
@@ -289,35 +357,28 @@ spreadLevelPlot(lm_tfg_model)
 vif(lm_tfg_model) # variance inflation factors 
 sqrt(vif(lm_tfg_model)) > 2 # problem?
 
-
-# Evaluate Nonlinearity
-# component + residual plot 
-crPlots(lm_tfg_model)
-# Ceres plots 
-ceresPlots(lm_tfg_model)
-
-
-# Test for Autocorrelated Errors
-durbinWatsonTest(lm_tfg_model)
-
+# summary test
 library(gvlma)
 gvmodel <- gvlma(lm_tfg_model) 
 summary(gvmodel)
 
-# cumple 
-
 summary(lm_tfg_model)$r.squared
 
 
-# categorical 
+#No we will add the  categorical variables
 
 names(data)
 
 str(data)
 
+# best model numeric variables
 lm_tfg__categorical = lm(TFGCKD ~ BUN + COLESTEROL, data = data)
+
+
+# evaluate tratamiento
 lm_tfg__tratamiento = lm(TFGCKD ~ BUN + COLESTEROL + TRATAMIENTO  , data = data)
-anova(lm_tfg__categorical, lm_tfg__tratamiento)
+anova(lm_tfg__categorical, lm_tfg__tratamiento) # p-value > 0.05
+
 
 lm_tfg__categorical = lm(TFGCKD ~ BUN + COLESTEROL  , data = data)
 lm_tfg__categorical_sexo = lm(TFGCKD ~ BUN + COLESTEROL + SEXO  , data = data)
@@ -328,6 +389,7 @@ lm_tfg__categorical = lm(TFGCKD ~ BUN + COLESTEROL  , data = data)
 lm_tfg__categorical_pie = lm(TFGCKD ~ BUN + COLESTEROL + PIEDIABETICO  , data = data)
 anova(lm_tfg__categorical, lm_tfg__categorical_pie)
 
+# PIE Diabetico is a categorical variable that increment the significance
 summary(lm_tfg__categorical_pie)
 
 
@@ -338,21 +400,9 @@ par(mfrow=c(1,1)) # Change back to 1 x 1
 
 
 shapiro.test(lm_tfg__categorical_pie$residuals)
+
 ncvTest(lm_tfg__categorical_pie)
-durbinWatsonTest(lm_tfg__categorical_pie)
 
 gvmodel <- gvlma(lm_tfg__categorical_pie) 
 summary(gvmodel)
-
-
-
-
-
-
-
-
-
-
-
-
 
