@@ -398,7 +398,6 @@ anova(lm_tfg__categorical, lm_tfg__categorical_pie)
 # PIE Diabetico is a categorical variable that increment the significance
 summary(lm_tfg__categorical_pie)
 
-
 par(mfrow=c(2,2)) # Change the panel layout to 2 x 2
 plot(lm_tfg__categorical_pie)
 par(mfrow=c(1,1)) # Change back to 1 x 1
