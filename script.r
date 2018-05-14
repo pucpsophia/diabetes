@@ -7,6 +7,10 @@ install.packages("ggplot2")
 install.packages("corrplot")
 install.packages("descr")
 install.packages("car")
+
+# for mac os 
+# install.packages("data.table", dependencies=TRUE)
+# update.packages() 
 install.packages("MASS")
 install.packages("caret")
 install.packages("glmnet")
@@ -17,6 +21,8 @@ install.packages("ggpubr")
 install.packages("GGally")
 install.packages("BCA")
 install.packages("backports")
+install.packages("gvlma")
+install.packages("lmtest")
 
 library(corrplot)
 library(lars)
@@ -41,8 +47,9 @@ library(MASS)
 
 # Load data , please set the folder 
 
-setwd(dir = "f://diabetes")
+#setwd(dir = "f://diabetes")
 
+setwd(dir = "/Users/gregory/Documents/pucp/diabetes")
 data <- read.csv(file="data.csv", header=TRUE, sep=",", colClasses = c("character"))
 
 names(data)
@@ -154,6 +161,8 @@ par(mfrow=c(1,1))
 
 # histogram views to numeric variables 
 
+par(mfrow=c(2,3)) 
+
 hist(data$EDAD, col="#39CCCC", main="", xlab="Edad en años", ylab="Frecuencia")
 hist(data$TIEMPODIAG, col="#39CCCC", main="", xlab="Años diagnostico", ylab="Frecuencia")
 hist(data$PESO, col="#39CCCC", main="", xlab="Peso en kilogramos", ylab="Frecuencia")
@@ -168,6 +177,7 @@ hist(data$BUN, col="#39CCCC", main="", xlab="BUN (mg/dL)", ylab="Frecuencia")
 hist(data$UREA, col="#39CCCC", main="", xlab="UREA (mg/dL)", ylab="Frecuencia")
 hist(data$CREATININA, col="#39CCCC", main="", xlab="Creatinina (mg/dL)", ylab="Frecuencia")
 
+par(mfrow=c(1,1)) 
 
 "
 La colinealidad indica si en el modelo alguna variable independiente es combinación lineal de otras.
@@ -191,7 +201,7 @@ ggpairs(data_non_colineal) # cor(data_scaled)
 #  ========================== simple lineal regrasion tfg - bun
 
 ggplot(data_non_colineal, aes( x = BUN, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
-lm_tfg_bun = lm(TFG~BUN, data = data_non_colineal)
+lm_tfg_bun = lm(TFG ~ BUN, data = data_non_colineal)
 summary(lm_tfg_bun) 
 
 par(mfrow=c(2,2)) 
@@ -200,11 +210,7 @@ par(mfrow=c(1,1))
 
 # normal test of residuals for less than 30 elements ; p-value > 0.05 es normal
 
-shapiro.test(lm_tfg_bun$residuals)
-
-# qq plot of residuals 
-
-qqPlot(lm_tfg_bun)
+shapiro.test(lm_tfg_bun$residuals) # < 0.5 this is not a normal distribution
 
 # distribution of studentized residuals
 residuos <- studres(lm_tfg_bun) 
@@ -288,28 +294,22 @@ par(mfrow=c(1,1)) # Change back to 1 x 1
 lm_final = lm(TFG ~ BUN, data = data_non_colineal)
 summary(lm_final) # R2 0.726
 
-lm_final_full = lm(TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
-summary(lm_final_full) # R2 0.81
 
+# step wise recommendation
+
+lm_final_full = lm(TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+summary(lm_final_full) # R2 0.838
+
+# model without HDL
 lm_final_full_n_hdl = lm(TFG~BUN + COL + HEMO, data = data_non_colineal)
-summary(lm_final_full_n_hdl) # R2 0.81
+summary(lm_final_full_n_hdl) # R2 0.8303
 
 anova(lm_final_full, lm_final_full_n_hdl) # significancia menor a 0.5 por lo que si hay diferencia 
 
-shapiro.test(lm_final_full_n_hdl$residuals) # ; p-value > 0.05 es normal
-
-ncvTest(lm_final_full_n_hdl) # Breusch-Pagan test. p-value > 0.05 homosedasticity 
-
+# model without HEMO
 lm_final_full_n_HEMO = lm(TFG ~ BUN + COL, data = data_non_colineal)
-anova(lm_final_full_n_hdl, lm_final_full_n_HEMO) # R2 0.81
-summary(lm_final_full_n_HEMO) # R2 0.81
-
-shapiro.test(lm_final_full_n_HEMO$residuals)
-ncvTest(lm_final_full_n_HEMOO)
-
-par(mfrow=c(2,2)) # Change the panel layout to 2 x 2
-plot(lm_final_full_n_HEMO)
-par(mfrow=c(1,1)) # Change back to 1 x 1
+summary(lm_final_full_n_HEMO) # R2 0.82
+anova(lm_final_full_n_hdl, lm_final_full_n_HEMO) 
 
 # pruebas de bondad
 #http://data.library.virginia.edu/diagnostic-plots/
@@ -320,7 +320,15 @@ lm_tfg_model = lm(TFG ~ BUN + COL, data = data_non_colineal)
 
 qqPlot(lm_tfg_model, main="") #qq plot for studentized resid
 
-leveragePlots(lm_tfg_model, main="") # leverage plots
+par(mfrow=c(2,2)) # Change the panel layout to 2 x 2
+plot(lm_tfg_model)
+par(mfrow=c(1,1)) # Change back to 1 x 1
+
+
+# normal test of residuals for less than 30 elements
+shapiro.test(lm_tfg_model$residuals) #  ; p-value > 0.05 es normal
+# Breusch-Pagan test. p-value > 0.05 homosedasticity 
+ncvTest(lm_tfg_model)  
 
 
 # Influential Observations added variable plots 
@@ -336,7 +344,7 @@ influencePlot(lm_tfg_model,	id.method="identify", main="Influence Plot", sub="Ci
 
 # Normality of Residuals 
 # qq plot for studentized resid
-qqPlot(lm_tfg_model, main="QQ Plot")
+qqPlot(lm_tfg_model, main="Lineal Model QQ Plot")
 
 # distribution of studentized residuals
 library(MASS)
@@ -364,11 +372,8 @@ summary(gvmodel)
 
 summary(lm_tfg_model)$r.squared
 
-
-#No we will add the  categorical variables
-
+# Now we will add the  categorical variables
 names(data)
-
 str(data)
 
 # best model numeric variables
@@ -377,6 +382,7 @@ lm_tfg__categorical = lm(TFGCKD ~ BUN + COLESTEROL, data = data)
 
 # evaluate tratamiento
 lm_tfg__tratamiento = lm(TFGCKD ~ BUN + COLESTEROL + TRATAMIENTO  , data = data)
+
 anova(lm_tfg__categorical, lm_tfg__tratamiento) # p-value > 0.05
 
 
@@ -397,12 +403,27 @@ par(mfrow=c(2,2)) # Change the panel layout to 2 x 2
 plot(lm_tfg__categorical_pie)
 par(mfrow=c(1,1)) # Change back to 1 x 1
 
-
-
+# test normalidad
 shapiro.test(lm_tfg__categorical_pie$residuals)
-
+# test homocedasticidad 
 ncvTest(lm_tfg__categorical_pie)
 
 gvmodel <- gvlma(lm_tfg__categorical_pie) 
 summary(gvmodel)
 
+coefficients(lm_tfg__categorical_pie) # model coefficients
+confint(lm_tfg__categorical_pie, level=0.95)
+# test anova 
+anova(lm_tfg__categorical_pie)
+# covariance matrix
+vcov(lm_tfg__categorical_pie)
+
+install.packages("relaimpo")
+library(relaimpo)
+calc.relimp(lm_tfg__categorical_pie,type=c("lmg","last","first","pratt"),
+            rela=TRUE)
+boot <- boot.relimp(lm_tfg__categorical_pie, b = 1000, type = c("lmg", 
+                                            "last", "first", "pratt"), rank = TRUE, 
+                    diff = TRUE, rela = TRUE)
+booteval.relimp(boot) # print result
+plot(booteval.relimp(boot,sort=TRUE)) # plot result
