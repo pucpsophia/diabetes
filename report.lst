@@ -1,0 +1,1202 @@
+ names(data)
+ 
+ [1] "ALIAS"         "EDAD"          "SEXO"          "ECIVIL"        "TIEMPODIAG"   
+ [6] "TRATAMIENTO"   "PESO"          "TALLA"         "IMC"           "HTA"          
+[11] "HEMOGLOBINA"   "GLICOSILADA"   "TRIGLICERIDOS" "COLESTEROL"    "HDL"          
+[16] "ALBUMINA"      "BUN"           "UREA"          "CREATININA"    "TFGCKD"       
+[21] "TFGMDRD"       "PIEDIABETICO"
+
+
+str(data)
+
+'data.frame':	30 obs. of  22 variables:
+ $ ALIAS        : chr  "A1" "A2" "A3" "A4" ...
+ $ EDAD         : num  52 55 68 62 56 62 77 72 86 63 ...
+ $ SEXO         : Factor w/ 2 levels "F","M": 1 2 1 1 1 2 1 2 1 2 ...
+ $ ECIVIL       : Factor w/ 2 levels "CASADO","SOLTERO": 2 1 1 2 2 2 1 1 2 1 ...
+ $ TIEMPODIAG   : num  22 1 10 10 38 10 15 22 15 23 ...
+ $ TRATAMIENTO  : Factor w/ 3 levels "ADO","INSULINA",..: 2 3 1 3 2 2 1 1 1 1 ...
+ $ PESO         : num  83 95 60 90 90 60 78 62 68 89 ...
+ $ TALLA        : num  1.66 1.7 1.48 1.53 1.56 1.6 1.6 1.46 1.55 1.6 ...
+ $ IMC          : num  30 32 27 38 36 23 30 29 28 34 ...
+ $ HTA          : Factor w/ 2 levels "NO","SI": 2 1 2 2 2 2 2 2 2 1 ...
+ $ HEMOGLOBINA  : num  10.2 8.8 10.6 8.9 8.8 11.3 9.6 8.1 11.2 10.5 ...
+ $ GLICOSILADA  : num  8 9 7.6 5.7 7.5 11.4 13.7 11.3 5.6 13.1 ...
+ $ TRIGLICERIDOS: num  260 129 96 89 117 138 189 105 154 130 ...
+ $ COLESTEROL   : num  195 114 144 150 110 130 235 137 164 151 ...
+ $ HDL          : num  39.1 13.5 38.5 53.9 27.2 63.7 51.9 33.7 39.3 25.7 ...
+ $ ALBUMINA     : num  4 1.9 4 2.3 3.3 3.4 2.7 3.4 3 3.2 ...
+ $ BUN          : num  15 16 24 51 7 13 12 13 19 30 ...
+ $ UREA         : num  32.1 34.2 51.4 109.1 15 ...
+ $ CREATININA   : num  0.68 0.56 0.98 4.08 0.67 0.75 1 0.7 1.08 1.66 ...
+ $ TFGCKD       : num  116.6 135 68.7 12.8 113.9 ...
+ $ TFGMDRD      : num  93.2 114.7 56.9 10.3 99.9 ...
+ $ PIEDIABETICO : Factor w/ 2 levels "ISQUEMICO","NEUROPATICO": 2 2 2 1 1 1 1 1 1 
+ 
+
+# select numeric columns and rename 
+ 
+ colnames(data_selected) <- c("TIE", "IMC", "HEMO", "GLI", "TRI", "COL", "HDL", "ALB","BUN", "URE",  "TFG", "CRE" )
+ 
+names(data_selected)
+ [1] "TIE"  "IMC"  "HEMO" "GLI"  "TRI"  "COL"  "HDL"  "ALB"  "BUN"  "URE"  "TFG" 
+[12] "CRE" 
+ 
+ 
+ # variables sin colinealidad
+ 
+ names(data_non_colineal)
+ [1] "TIE"  "IMC"  "HEMO" "GLI"  "TRI"  "COL"  "HDL"  "ALB"  "BUN"  "TFG" 
+ 
+ 
+ 
+ 
+#  ========================== simple lineal regrasion tfg - bun
+
+ggplot(data_non_colineal, aes( x = BUN, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
+lm_tfg_bun = lm(TFG ~ BUN, data = data_non_colineal)
+summary(lm_tfg_bun) 
+
+
+Call:
+lm(formula = TFG ~ BUN, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-49.965  -9.731   3.710  17.456  34.438 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  137.259      6.707  20.466  < 2e-16 ***
+BUN           -2.033      0.230  -8.838 1.36e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 23.21 on 28 degrees of freedom
+Multiple R-squared:  0.7361,	Adjusted R-squared:  0.7267 
+F-statistic: 78.12 on 1 and 28 DF,  p-value: 1.365e-09
+
+
+
+# normal test of residuals for less than 30 elements ; p-value > 0.05 es normal
+shapiro.test(lm_tfg_bun$residuals) # < 0.5 this is not a normal distribution
+
+	Shapiro-Wilk normality test
+
+data:  lm_tfg_bun$residuals
+W = 0.92957, p-value = 0.04784  
+# Breusch-Pagan test. p-value > 0.05 homosedasticity
+
+
+ncvTest(lm_tfg_bun)  
+
+Non-constant Variance Score Test 
+Variance formula: ~ fitted.values 
+Chisquare = 0.08368364    Df = 1     p = 0.7723662 
+
+
+
+
+
+#  ========================== simple lineal regrasion tfg - HEMO
+
+ggplot(data_non_colineal, aes( x = HEMO, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
+lm_tfg_hemo = lm( TFG ~ HEMO, data = data_non_colineal)
+summary(lm_tfg_hemo) # p value superior a 0.5 y R Square bajo descartamos esta regresion simple
+
+
+Call:
+lm(formula = TFG ~ HEMO, data = data_non_colineal)
+
+Residuals:
+   Min     1Q Median     3Q    Max 
+-88.37 -32.48  10.25  28.68  65.91 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)   
+(Intercept)  -52.163     51.694  -1.009  0.32157   
+HEMO          13.779      4.915   2.804  0.00908 **
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 39.93 on 28 degrees of freedom
+Multiple R-squared:  0.2192,	Adjusted R-squared:  0.1913 
+F-statistic:  7.86 on 1 and 28 DF,  p-value: 0.009076
+
+
+
+# normal test of residuals for less than 30 elements
+shapiro.test(lm_tfg_hemo$residuals) # ; p-value > 0.05 es normal
+
+	Shapiro-Wilk normality test
+
+data:  lm_tfg_hemo$residuals
+W = 0.96372, p-value = 0.3842
+
+
+# Breusch-Pagan test. p-value > 0.05 homosedasticity 
+ncvTest(lm_tfg_bun)  
+
+Non-constant Variance Score Test 
+Variance formula: ~ fitted.values 
+Chisquare = 0.08368364    Df = 1     p = 0.7723662 
+
+
+#  ========================== simple lineal regrasion TFG - GLI
+
+ggplot(data_non_colineal, aes( x = GLI, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
+lm_tfg_gli = lm(TFG~GLI, data = data_non_colineal)
+summary(lm_tfg_gli) # p value superior a 0.5 y R Square bajo descartamos esta regresion simple
+
+Call:
+lm(formula = TFG ~ GLI, data = data_non_colineal)
+
+Residuals:
+   Min     1Q Median     3Q    Max 
+-84.13 -13.31  17.50  30.66  58.77 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)  
+(Intercept)   29.292     33.411   0.877   0.3881  
+GLI            6.796      3.561   1.909   0.0666 .
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 42.51 on 28 degrees of freedom
+Multiple R-squared:  0.1151,	Adjusted R-squared:  0.08352 
+F-statistic: 3.643 on 1 and 28 DF,  p-value: 0.06662
+
+
+
+
+# normal test of residuals for less than 30 elements
+shapiro.test(lm_tfg_gli$residuals) #  ; p-value > 0.05 es normal
+# Breusch-Pagan test. p-value > 0.05 homosedasticity 
+
+	Shapiro-Wilk normality test
+
+data:  lm_tfg_gli$residuals
+W = 0.85707, p-value = 0.0008751
+
+
+
+ncvTest(lm_tfg_gli)  
+
+Non-constant Variance Score Test 
+Variance formula: ~ fitted.values 
+Chisquare = 0.00501449    Df = 1     p = 0.9435465 
+
+#  ========================================================================
+
+#  ========================== multi lineal  regrasion TFG  
+
+
+# step wise utilization
+
+lm_full  <- lm(TFG ~ ., data = data_non_colineal)
+lm_null  <- lm(TFG ~ 1, data = data_non_colineal)
+
+
+# step backward 
+lm_backward <- step(lm_full, direction= "backward")
+summary(lm_backward) # HEMO, COL, HDL, BUN ,  R2 = 0.838
+
+Call:
+lm(formula = TFG ~ HEMO + COL + HDL + BUN, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-38.054  -8.793   1.078  11.157  32.825 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 147.6129    31.9498   4.620 9.97e-05 ***
+HEMO          4.5784     2.4405   1.876   0.0724 .  
+COL          -0.3026     0.1143  -2.648   0.0138 *  
+HDL          -0.5394     0.3614  -1.492   0.1481    
+BUN          -2.0293     0.1985 -10.223 2.05e-10 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 17.87 on 25 degrees of freedom
+Multiple R-squared:  0.8603,	Adjusted R-squared:  0.838 
+F-statistic: 38.49 on 4 and 25 DF,  p-value: 2.425e-10
+
+
+
+lm_forward <- step(lm_null,scope =list(lower= lm_null, upper=lm_full), direction = "forward")
+summary(lm_forward) # BUN COL HEMO HDL, R2  = 0.838
+
+
+Call:
+lm(formula = TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-38.054  -8.793   1.078  11.157  32.825 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 147.6129    31.9498   4.620 9.97e-05 ***
+BUN          -2.0293     0.1985 -10.223 2.05e-10 ***
+COL          -0.3026     0.1143  -2.648   0.0138 *  
+HEMO          4.5784     2.4405   1.876   0.0724 .  
+HDL          -0.5394     0.3614  -1.492   0.1481    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 17.87 on 25 degrees of freedom
+Multiple R-squared:  0.8603,	Adjusted R-squared:  0.838 
+F-statistic: 38.49 on 4 and 25 DF,  p-value: 2.425e-10
+
+lm_both <- step(lm_null,scope =list(upper=lm_full), direction = "both")
+summary(lm_both) # BUN COL HEMO HDL, R2 = 0.838
+
+
+Call:
+lm(formula = TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-38.054  -8.793   1.078  11.157  32.825 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 147.6129    31.9498   4.620 9.97e-05 ***
+BUN          -2.0293     0.1985 -10.223 2.05e-10 ***
+COL          -0.3026     0.1143  -2.648   0.0138 *  
+HEMO          4.5784     2.4405   1.876   0.0724 .  
+HDL          -0.5394     0.3614  -1.492   0.1481    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 17.87 on 25 degrees of freedom
+Multiple R-squared:  0.8603,	Adjusted R-squared:  0.838 
+F-statistic: 38.49 on 4 and 25 DF,  p-value: 2.425e-10
+
+
+
+# we must reduce the number of variabnles in the model to guarantee the best mean of the independ variable againts depend variable.
+
+lm_final = lm(TFG ~ BUN, data = data_non_colineal)
+summary(lm_final) # R2 0.726
+
+Call:
+lm(formula = TFG ~ BUN, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-49.965  -9.731   3.710  17.456  34.438 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  137.259      6.707  20.466  < 2e-16 ***
+BUN           -2.033      0.230  -8.838 1.36e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 23.21 on 28 degrees of freedom
+Multiple R-squared:  0.7361,	Adjusted R-squared:  0.7267 
+F-statistic: 78.12 on 1 and 28 DF,  p-value: 1.365e-09
+
+
+
+# step wise recommendation
+
+lm_final_full = lm(TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+summary(lm_final_full) # R2 0.838
+
+
+
+Call:
+lm(formula = TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-38.054  -8.793   1.078  11.157  32.825 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 147.6129    31.9498   4.620 9.97e-05 ***
+BUN          -2.0293     0.1985 -10.223 2.05e-10 ***
+COL          -0.3026     0.1143  -2.648   0.0138 *  
+HEMO          4.5784     2.4405   1.876   0.0724 .  
+HDL          -0.5394     0.3614  -1.492   0.1481    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 17.87 on 25 degrees of freedom
+Multiple R-squared:  0.8603,	Adjusted R-squared:  0.838 
+F-statistic: 38.49 on 4 and 25 DF,  p-value: 2.425e-10
+
+# step wise recommendation
+
+lm_final_full = lm(TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+summary(lm_final_full) # R2 0.838
+
+> ggplot(data_non_colineal, aes( x = HEMO, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
+> lm_tfg_hemo = lm( TFG ~ HEMO, data = data_non_colineal)
+> summary(lm_tfg_hemo) # p value superior a 0.5 y R Square bajo descartamos esta regresion simple
+
+Call:
+lm(formula = TFG ~ HEMO, data = data_non_colineal)
+
+Residuals:
+   Min     1Q Median     3Q    Max 
+-88.37 -32.48  10.25  28.68  65.91 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)   
+(Intercept)  -52.163     51.694  -1.009  0.32157   
+HEMO          13.779      4.915   2.804  0.00908 **
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 39.93 on 28 degrees of freedom
+Multiple R-squared:  0.2192,	Adjusted R-squared:  0.1913 
+F-statistic:  7.86 on 1 and 28 DF,  p-value: 0.009076
+
+> 
+> # normal test of residuals for less than 30 elements
+> shapiro.test(lm_tfg_hemo$residuals) # ; p-value > 0.05 es normal
+
+	Shapiro-Wilk normality test
+
+data:  lm_tfg_hemo$residuals
+W = 0.96372, p-value = 0.3842
+
+> # Breusch-Pagan test. p-value > 0.05 homosedasticity 
+> ncvTest(lm_tfg_bun)  
+Non-constant Variance Score Test 
+Variance formula: ~ fitted.values 
+Chisquare = 0.08368364    Df = 1     p = 0.7723662 
+> 
+> # distribution of studentized residuals
+> residuos <- studres(lm_tfg_bun) 
+> hist(residuos, freq=FALSE, main="")
+> xfit<-seq(min(residuos),max(residuos),length=40) 
+> yfit<-dnorm(xfit) 
+> lines(xfit, yfit)
+> #  ========================== simple lineal regrasion TFG - GLI
+> 
+> ggplot(data_non_colineal, aes( x = GLI, y = TFG)) + geom_point(shape=1) + geom_smooth(method=lm)
+> lm_tfg_gli = lm(TFG~GLI, data = data_non_colineal)
+> summary(lm_tfg_gli) # p value superior a 0.5 y R Square bajo descartamos esta regresion simple
+
+Call:
+lm(formula = TFG ~ GLI, data = data_non_colineal)
+
+Residuals:
+   Min     1Q Median     3Q    Max 
+-84.13 -13.31  17.50  30.66  58.77 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)  
+(Intercept)   29.292     33.411   0.877   0.3881  
+GLI            6.796      3.561   1.909   0.0666 .
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 42.51 on 28 degrees of freedom
+Multiple R-squared:  0.1151,	Adjusted R-squared:  0.08352 
+F-statistic: 3.643 on 1 and 28 DF,  p-value: 0.06662
+
+> 
+> 
+> # normal test of residuals for less than 30 elements
+> shapiro.test(lm_tfg_gli$residuals) #  ; p-value > 0.05 es normal
+
+	Shapiro-Wilk normality test
+
+data:  lm_tfg_gli$residuals
+W = 0.85707, p-value = 0.0008751
+
+> # Breusch-Pagan test. p-value > 0.05 homosedasticity 
+> ncvTest(lm_tfg_gli)  
+Non-constant Variance Score Test 
+Variance formula: ~ fitted.values 
+Chisquare = 0.00501449    Df = 1     p = 0.9435465 
+> 
+> #  ========================================================================
+> #  ========================== multi lineal  regrasion TFG  
+> 
+> 
+> # step wise utilization
+> 
+> lm_full  <- lm(TFG ~ ., data = data_non_colineal)
+> lm_null  <- lm(TFG ~ 1, data = data_non_colineal)
+> 
+> 
+> # step backward 
+> lm_backward <- step(lm_full, direction= "backward")
+Start:  AIC=184.17
+TFG ~ TIE + IMC + HEMO + GLI + TRI + COL + HDL + ALB + BUN
+
+       Df Sum of Sq     RSS    AIC
+- TRI   1      60.6  7200.0 182.42
+- ALB   1     120.8  7260.2 182.67
+- IMC   1     166.1  7305.5 182.85
+- TIE   1     214.1  7353.4 183.05
+<none>               7139.4 184.17
+- GLI   1     522.0  7661.3 184.28
+- HDL   1     576.9  7716.3 184.50
+- HEMO  1     881.0  8020.4 185.66
+- COL   1    1526.5  8665.9 187.98
+- BUN   1   23273.5 30412.9 225.64
+
+Step:  AIC=182.42
+TFG ~ TIE + IMC + HEMO + GLI + COL + HDL + ALB + BUN
+
+       Df Sum of Sq     RSS    AIC
+- ALB   1     127.0  7327.1 180.94
+- IMC   1     155.2  7355.3 181.06
+- TIE   1     201.1  7401.1 181.25
+- GLI   1     474.3  7674.3 182.33
+<none>               7200.0 182.42
+- HDL   1     701.7  7901.8 183.21
+- HEMO  1     885.4  8085.4 183.90
+- COL   1    2083.6  9283.6 188.04
+- BUN   1   23502.8 30702.8 223.93
+
+Step:  AIC=180.94
+TFG ~ TIE + IMC + HEMO + GLI + COL + HDL + BUN
+
+       Df Sum of Sq   RSS    AIC
+- TIE   1     109.9  7437 179.39
+- IMC   1     110.2  7437 179.39
+- GLI   1     387.6  7715 180.49
+<none>               7327 180.94
+- HDL   1     592.8  7920 181.28
+- HEMO  1    1168.0  8495 183.38
+- COL   1    2345.8  9673 187.28
+- BUN   1   26676.0 34003 224.99
+
+Step:  AIC=179.39
+TFG ~ IMC + HEMO + GLI + COL + HDL + BUN
+
+       Df Sum of Sq   RSS    AIC
+- IMC   1     108.1  7545 177.82
+- GLI   1     391.5  7828 178.93
+<none>               7437 179.39
+- HDL   1     590.0  8027 179.68
+- HEMO  1    1123.4  8560 181.61
+- COL   1    2461.2  9898 185.97
+- BUN   1   28134.0 35571 224.34
+
+Step:  AIC=177.82
+TFG ~ HEMO + GLI + COL + HDL + BUN
+
+       Df Sum of Sq   RSS    AIC
+- GLI   1     441.9  7987 177.53
+<none>               7545 177.82
+- HDL   1     564.4  8109 177.99
+- HEMO  1    1041.6  8587 179.70
+- COL   1    2438.4  9984 184.22
+- BUN   1   29856.1 37401 223.85
+
+Step:  AIC=177.53
+TFG ~ HEMO + COL + HDL + BUN
+
+       Df Sum of Sq   RSS    AIC
+<none>               7987 177.53
+- HDL   1       712  8699 178.09
+- HEMO  1      1124  9111 179.48
+- COL   1      2240 10226 182.95
+- BUN   1     33387 41374 224.88
+> summary(lm_backward) # HEMO, COL, HDL, BUN ,  R2 = 0.838
+
+Call:
+lm(formula = TFG ~ HEMO + COL + HDL + BUN, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-38.054  -8.793   1.078  11.157  32.825 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 147.6129    31.9498   4.620 9.97e-05 ***
+HEMO          4.5784     2.4405   1.876   0.0724 .  
+COL          -0.3026     0.1143  -2.648   0.0138 *  
+HDL          -0.5394     0.3614  -1.492   0.1481    
+BUN          -2.0293     0.1985 -10.223 2.05e-10 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 17.87 on 25 degrees of freedom
+Multiple R-squared:  0.8603,	Adjusted R-squared:  0.838 
+F-statistic: 38.49 on 4 and 25 DF,  p-value: 2.425e-10
+
+> lm_forward <- step(lm_null,scope =list(lower= lm_null, upper=lm_full), direction = "forward")
+Start:  AIC=228.58
+TFG ~ 1
+
+       Df Sum of Sq   RSS    AIC
++ BUN   1     42091 15087 190.61
++ HEMO  1     12533 44645 223.16
++ GLI   1      6582 50595 226.91
+<none>              57177 228.58
++ ALB   1      2359 54818 229.32
++ TIE   1      2182 54995 229.41
++ HDL   1      1881 55296 229.58
++ IMC   1      1581 55597 229.74
++ COL   1       874 56303 230.12
++ TRI   1       130 57048 230.51
+
+Step:  AIC=190.61
+TFG ~ BUN
+
+       Df Sum of Sq     RSS    AIC
++ COL   1    5560.7  9525.9 178.82
++ HDL   1    2838.4 12248.2 186.36
++ TRI   1    1968.1 13118.5 188.42
++ HEMO  1    1513.7 13572.9 189.44
+<none>              15086.6 190.61
++ GLI   1     454.4 14632.2 191.69
++ TIE   1     237.6 14849.0 192.13
++ ALB   1      51.2 15035.4 192.51
++ IMC   1       0.6 15086.0 192.61
+
+Step:  AIC=178.82
+TFG ~ BUN + COL
+
+       Df Sum of Sq    RSS    AIC
++ HEMO  1    827.36 8698.6 178.09
++ GLI   1    633.62 8892.3 178.75
+<none>              9525.9 178.82
++ HDL   1    414.59 9111.4 179.48
++ TIE   1     70.48 9455.5 180.59
++ IMC   1     50.68 9475.3 180.66
++ TRI   1     48.35 9477.6 180.66
++ ALB   1      4.26 9521.7 180.80
+
+Step:  AIC=178.09
+TFG ~ BUN + COL + HEMO
+
+       Df Sum of Sq    RSS    AIC
++ HDL   1    711.61 7987.0 177.53
++ GLI   1    589.10 8109.5 177.99
+<none>              8698.6 178.09
++ IMC   1    131.83 8566.8 179.63
++ TIE   1    109.26 8589.3 179.71
++ ALB   1     59.94 8638.6 179.88
++ TRI   1     55.73 8642.8 179.90
+
+Step:  AIC=177.53
+TFG ~ BUN + COL + HEMO + HDL
+
+       Df Sum of Sq    RSS    AIC
+<none>              7987.0 177.53
++ GLI   1    441.87 7545.1 177.82
++ IMC   1    158.48 7828.5 178.93
++ TIE   1    111.48 7875.5 179.11
++ TRI   1      4.49 7982.5 179.51
++ ALB   1      0.79 7986.2 179.53
+> summary(lm_forward) # BUN COL HEMO HDL, R2  = 0.838
+
+Call:
+lm(formula = TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-38.054  -8.793   1.078  11.157  32.825 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 147.6129    31.9498   4.620 9.97e-05 ***
+BUN          -2.0293     0.1985 -10.223 2.05e-10 ***
+COL          -0.3026     0.1143  -2.648   0.0138 *  
+HEMO          4.5784     2.4405   1.876   0.0724 .  
+HDL          -0.5394     0.3614  -1.492   0.1481    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 17.87 on 25 degrees of freedom
+Multiple R-squared:  0.8603,	Adjusted R-squared:  0.838 
+F-statistic: 38.49 on 4 and 25 DF,  p-value: 2.425e-10
+
+> lm_forward <- step(lm_null,scope =list(lower= lm_null, upper=lm_full), direction = "forward")
+Start:  AIC=228.58
+TFG ~ 1
+
+       Df Sum of Sq   RSS    AIC
++ BUN   1     42091 15087 190.61
++ HEMO  1     12533 44645 223.16
++ GLI   1      6582 50595 226.91
+<none>              57177 228.58
++ ALB   1      2359 54818 229.32
++ TIE   1      2182 54995 229.41
++ HDL   1      1881 55296 229.58
++ IMC   1      1581 55597 229.74
++ COL   1       874 56303 230.12
++ TRI   1       130 57048 230.51
+
+Step:  AIC=190.61
+TFG ~ BUN
+
+       Df Sum of Sq     RSS    AIC
++ COL   1    5560.7  9525.9 178.82
++ HDL   1    2838.4 12248.2 186.36
++ TRI   1    1968.1 13118.5 188.42
++ HEMO  1    1513.7 13572.9 189.44
+<none>              15086.6 190.61
++ GLI   1     454.4 14632.2 191.69
++ TIE   1     237.6 14849.0 192.13
++ ALB   1      51.2 15035.4 192.51
++ IMC   1       0.6 15086.0 192.61
+
+Step:  AIC=178.82
+TFG ~ BUN + COL
+
+       Df Sum of Sq    RSS    AIC
++ HEMO  1    827.36 8698.6 178.09
++ GLI   1    633.62 8892.3 178.75
+<none>              9525.9 178.82
++ HDL   1    414.59 9111.4 179.48
++ TIE   1     70.48 9455.5 180.59
++ IMC   1     50.68 9475.3 180.66
++ TRI   1     48.35 9477.6 180.66
++ ALB   1      4.26 9521.7 180.80
+
+Step:  AIC=178.09
+TFG ~ BUN + COL + HEMO
+
+       Df Sum of Sq    RSS    AIC
++ HDL   1    711.61 7987.0 177.53
++ GLI   1    589.10 8109.5 177.99
+<none>              8698.6 178.09
++ IMC   1    131.83 8566.8 179.63
++ TIE   1    109.26 8589.3 179.71
++ ALB   1     59.94 8638.6 179.88
++ TRI   1     55.73 8642.8 179.90
+
+Step:  AIC=177.53
+TFG ~ BUN + COL + HEMO + HDL
+
+       Df Sum of Sq    RSS    AIC
+<none>              7987.0 177.53
++ GLI   1    441.87 7545.1 177.82
++ IMC   1    158.48 7828.5 178.93
++ TIE   1    111.48 7875.5 179.11
++ TRI   1      4.49 7982.5 179.51
++ ALB   1      0.79 7986.2 179.53
+> summary(lm_forward) # BUN COL HEMO HDL, R2  = 0.838
+
+Call:
+lm(formula = TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-38.054  -8.793   1.078  11.157  32.825 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 147.6129    31.9498   4.620 9.97e-05 ***
+BUN          -2.0293     0.1985 -10.223 2.05e-10 ***
+COL          -0.3026     0.1143  -2.648   0.0138 *  
+HEMO          4.5784     2.4405   1.876   0.0724 .  
+HDL          -0.5394     0.3614  -1.492   0.1481    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 17.87 on 25 degrees of freedom
+Multiple R-squared:  0.8603,	Adjusted R-squared:  0.838 
+F-statistic: 38.49 on 4 and 25 DF,  p-value: 2.425e-10
+
+> lm_both <- step(lm_null,scope =list(upper=lm_full), direction = "both")
+Start:  AIC=228.58
+TFG ~ 1
+
+       Df Sum of Sq   RSS    AIC
++ BUN   1     42091 15087 190.61
++ HEMO  1     12533 44645 223.16
++ GLI   1      6582 50595 226.91
+<none>              57177 228.58
++ ALB   1      2359 54818 229.32
++ TIE   1      2182 54995 229.41
++ HDL   1      1881 55296 229.58
++ IMC   1      1581 55597 229.74
++ COL   1       874 56303 230.12
++ TRI   1       130 57048 230.51
+
+Step:  AIC=190.61
+TFG ~ BUN
+
+       Df Sum of Sq   RSS    AIC
++ COL   1      5561  9526 178.82
++ HDL   1      2838 12248 186.36
++ TRI   1      1968 13119 188.42
++ HEMO  1      1514 13573 189.44
+<none>              15087 190.61
++ GLI   1       454 14632 191.69
++ TIE   1       238 14849 192.13
++ ALB   1        51 15035 192.51
++ IMC   1         1 15086 192.61
+- BUN   1     42091 57177 228.58
+
+Step:  AIC=178.82
+TFG ~ BUN + COL
+
+       Df Sum of Sq   RSS    AIC
++ HEMO  1       827  8699 178.09
++ GLI   1       634  8892 178.75
+<none>               9526 178.82
++ HDL   1       415  9111 179.48
++ TIE   1        70  9455 180.59
++ IMC   1        51  9475 180.66
++ TRI   1        48  9478 180.66
++ ALB   1         4  9522 180.80
+- COL   1      5561 15087 190.61
+- BUN   1     46777 56303 230.12
+
+Step:  AIC=178.09
+TFG ~ BUN + COL + HEMO
+
+       Df Sum of Sq   RSS    AIC
++ HDL   1       712  7987 177.53
++ GLI   1       589  8109 177.99
+<none>               8699 178.09
+- HEMO  1       827  9526 178.82
++ IMC   1       132  8567 179.63
++ TIE   1       109  8589 179.71
++ ALB   1        60  8639 179.88
++ TRI   1        56  8643 179.90
+- COL   1      4874 13573 189.44
+- BUN   1     35365 44063 224.76
+
+Step:  AIC=177.53
+TFG ~ BUN + COL + HEMO + HDL
+
+       Df Sum of Sq   RSS    AIC
+<none>               7987 177.53
++ GLI   1       442  7545 177.82
+- HDL   1       712  8699 178.09
++ IMC   1       158  7828 178.93
++ TIE   1       111  7875 179.11
+- HEMO  1      1124  9111 179.48
++ TRI   1         4  7982 179.51
++ ALB   1         1  7986 179.53
+- COL   1      2240 10226 182.95
+- BUN   1     33387 41374 224.88
+> summary(lm_both) # BUN COL HEMO HDL, R2 = 0.838
+
+Call:
+lm(formula = TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-38.054  -8.793   1.078  11.157  32.825 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 147.6129    31.9498   4.620 9.97e-05 ***
+BUN          -2.0293     0.1985 -10.223 2.05e-10 ***
+COL          -0.3026     0.1143  -2.648   0.0138 *  
+HEMO          4.5784     2.4405   1.876   0.0724 .  
+HDL          -0.5394     0.3614  -1.492   0.1481    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 17.87 on 25 degrees of freedom
+Multiple R-squared:  0.8603,	Adjusted R-squared:  0.838 
+F-statistic: 38.49 on 4 and 25 DF,  p-value: 2.425e-10
+
+> lm_both <- step(lm_null,scope =list(upper=lm_full), direction = "both")
+Start:  AIC=228.58
+TFG ~ 1
+
+       Df Sum of Sq   RSS    AIC
++ BUN   1     42091 15087 190.61
++ HEMO  1     12533 44645 223.16
++ GLI   1      6582 50595 226.91
+<none>              57177 228.58
++ ALB   1      2359 54818 229.32
++ TIE   1      2182 54995 229.41
++ HDL   1      1881 55296 229.58
++ IMC   1      1581 55597 229.74
++ COL   1       874 56303 230.12
++ TRI   1       130 57048 230.51
+
+Step:  AIC=190.61
+TFG ~ BUN
+
+       Df Sum of Sq   RSS    AIC
++ COL   1      5561  9526 178.82
++ HDL   1      2838 12248 186.36
++ TRI   1      1968 13119 188.42
++ HEMO  1      1514 13573 189.44
+<none>              15087 190.61
++ GLI   1       454 14632 191.69
++ TIE   1       238 14849 192.13
++ ALB   1        51 15035 192.51
++ IMC   1         1 15086 192.61
+- BUN   1     42091 57177 228.58
+
+Step:  AIC=178.82
+TFG ~ BUN + COL
+
+       Df Sum of Sq   RSS    AIC
++ HEMO  1       827  8699 178.09
++ GLI   1       634  8892 178.75
+<none>               9526 178.82
++ HDL   1       415  9111 179.48
++ TIE   1        70  9455 180.59
++ IMC   1        51  9475 180.66
++ TRI   1        48  9478 180.66
++ ALB   1         4  9522 180.80
+- COL   1      5561 15087 190.61
+- BUN   1     46777 56303 230.12
+
+Step:  AIC=178.09
+TFG ~ BUN + COL + HEMO
+
+       Df Sum of Sq   RSS    AIC
++ HDL   1       712  7987 177.53
++ GLI   1       589  8109 177.99
+<none>               8699 178.09
+- HEMO  1       827  9526 178.82
++ IMC   1       132  8567 179.63
++ TIE   1       109  8589 179.71
++ ALB   1        60  8639 179.88
++ TRI   1        56  8643 179.90
+- COL   1      4874 13573 189.44
+- BUN   1     35365 44063 224.76
+
+Step:  AIC=177.53
+TFG ~ BUN + COL + HEMO + HDL
+
+       Df Sum of Sq   RSS    AIC
+<none>               7987 177.53
++ GLI   1       442  7545 177.82
+- HDL   1       712  8699 178.09
++ IMC   1       158  7828 178.93
++ TIE   1       111  7875 179.11
+- HEMO  1      1124  9111 179.48
++ TRI   1         4  7982 179.51
++ ALB   1         1  7986 179.53
+- COL   1      2240 10226 182.95
+- BUN   1     33387 41374 224.88
+> summary(lm_both) # BUN COL HEMO HDL, R2 = 0.838
+
+Call:
+lm(formula = TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-38.054  -8.793   1.078  11.157  32.825 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 147.6129    31.9498   4.620 9.97e-05 ***
+BUN          -2.0293     0.1985 -10.223 2.05e-10 ***
+COL          -0.3026     0.1143  -2.648   0.0138 *  
+HEMO          4.5784     2.4405   1.876   0.0724 .  
+HDL          -0.5394     0.3614  -1.492   0.1481    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 17.87 on 25 degrees of freedom
+Multiple R-squared:  0.8603,	Adjusted R-squared:  0.838 
+F-statistic: 38.49 on 4 and 25 DF,  p-value: 2.425e-10
+
+> # we must reduce the number of variabnles in the model to guarantee the best mean of the independ variable againts depend variable.
+> 
+> lm_final = lm(TFG ~ BUN, data = data_non_colineal)
+> summary(lm_final) # R2 0.726
+
+Call:
+lm(formula = TFG ~ BUN, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-49.965  -9.731   3.710  17.456  34.438 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  137.259      6.707  20.466  < 2e-16 ***
+BUN           -2.033      0.230  -8.838 1.36e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 23.21 on 28 degrees of freedom
+Multiple R-squared:  0.7361,	Adjusted R-squared:  0.7267 
+F-statistic: 78.12 on 1 and 28 DF,  p-value: 1.365e-09
+
+> # step wise recommendation
+> 
+> lm_final_full = lm(TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+> summary(lm_final_full) # R2 0.838
+
+Call:
+lm(formula = TFG ~ BUN + COL + HEMO + HDL, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-38.054  -8.793   1.078  11.157  32.825 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 147.6129    31.9498   4.620 9.97e-05 ***
+BUN          -2.0293     0.1985 -10.223 2.05e-10 ***
+COL          -0.3026     0.1143  -2.648   0.0138 *  
+HEMO          4.5784     2.4405   1.876   0.0724 .  
+HDL          -0.5394     0.3614  -1.492   0.1481    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 17.87 on 25 degrees of freedom
+Multiple R-squared:  0.8603,	Adjusted R-squared:  0.838 
+F-statistic: 38.49 on 4 and 25 DF,  p-value: 2.425e-10
+
+> lm_final_full_n_hdl = lm(TFG~BUN + COL + HEMO, data = data_non_colineal)
+> summary(lm_final_full_n_hdl) # R2 0.8303
+
+Call:
+lm(formula = TFG ~ BUN + COL + HEMO, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-43.496  -8.550  -0.199   9.639  35.570 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 148.3655    32.6911   4.538 0.000114 ***
+BUN          -2.0694     0.2013 -10.281 1.19e-10 ***
+COL          -0.3874     0.1015  -3.817 0.000752 ***
+HEMO          3.8475     2.4466   1.573 0.127910    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 18.29 on 26 degrees of freedom
+Multiple R-squared:  0.8479,	Adjusted R-squared:  0.8303 
+F-statistic:  48.3 on 3 and 26 DF,  p-value: 9.068e-11
+
+
+
+
+# model without HDL
+lm_final_full_n_hdl = lm(TFG~BUN + COL + HEMO, data = data_non_colineal)
+summary(lm_final_full_n_hdl) # R2 0.8303
+
+
+
+Call:
+lm(formula = TFG ~ BUN + COL + HEMO, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-43.496  -8.550  -0.199   9.639  35.570 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 148.3655    32.6911   4.538 0.000114 ***
+BUN          -2.0694     0.2013 -10.281 1.19e-10 ***
+COL          -0.3874     0.1015  -3.817 0.000752 ***
+HEMO          3.8475     2.4466   1.573 0.127910    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 18.29 on 26 degrees of freedom
+Multiple R-squared:  0.8479,	Adjusted R-squared:  0.8303 
+F-statistic:  48.3 on 3 and 26 DF,  p-value: 9.068e-11
+
+
+# evaluate if there is a significant change
+anova(lm_final_full, lm_final_full_n_hdl) # significancia menor a 0.5 por lo que si hay diferencia 
+
+Analysis of Variance Table
+
+Model 1: TFG ~ BUN + COL + HEMO + HDL
+Model 2: TFG ~ BUN + COL + HEMO
+  Res.Df    RSS Df Sum of Sq      F Pr(>F)
+1     25 7987.0                           
+2     26 8698.6 -1   -711.61 2.2274 0.1481
+
+# model without HEMO
+lm_final_full_n_HEMO = lm(TFG ~ BUN + COL, data = data_non_colineal)
+summary(lm_final_full_n_HEMO) # R2 0.82
+anova(lm_final_full_n_hdl, lm_final_full_n_HEMO) 
+
+Analysis of Variance Table
+
+Model 1: TFG ~ BUN + COL + HEMO
+Model 2: TFG ~ BUN + COL
+  Res.Df    RSS Df Sum of Sq     F Pr(>F)
+1     26 8698.6                          
+2     27 9525.9 -1   -827.36 2.473 0.1279
+
+
+# pruebas de bondad
+#http://data.library.virginia.edu/diagnostic-plots/
+#https://www.statmethods.net/stats/rdiagnostics.html
+
+
+lm_tfg_model = lm(TFG ~ BUN + COL, data = data_non_colineal)
+
+Call:
+lm(formula = TFG ~ BUN + COL, data = data_non_colineal)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-42.052 -13.084   1.714   8.073  35.264 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 194.1136    15.3148   12.68 7.02e-13 ***
+BUN          -2.1925     0.1904  -11.51 6.35e-12 ***
+COL          -0.4097     0.1032   -3.97 0.000479 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 18.78 on 27 degrees of freedom
+Multiple R-squared:  0.8334,	Adjusted R-squared:  0.8211 
+F-statistic: 67.53 on 2 and 27 DF,  p-value: 3.11e-11
+
+
+# normal test of residuals for less than 30 elements
+shapiro.test(lm_tfg_model$residuals) #  ; p-value > 0.05 es normal
+
+	Shapiro-Wilk normality test
+
+data:  lm_tfg_model$residuals
+W = 0.98281, p-value = 0.8943
+
+
+# Breusch-Pagan test. p-value > 0.05 homosedasticity 
+ncvTest(lm_tfg_model)  
+
+Non-constant Variance Score Test 
+Variance formula: ~ fitted.values 
+Chisquare = 0.06050185    Df = 1     p = 0.8057045 
+
+# summary test
+library(gvlma)
+gvmodel <- gvlma(lm_tfg_model) 
+summary(gvmodel)
+
+
+
+
+
+# Now we will add the  categorical variables
+names(data)
+str(data)
+
+# best model numeric variables
+lm_tfg__categorical = lm(TFGCKD ~ BUN + COLESTEROL, data = data)
+
+
+# evaluate tratamiento
+lm_tfg__tratamiento = lm(TFGCKD ~ BUN + COLESTEROL + TRATAMIENTO  , data = data)
+
+anova(lm_tfg__categorical, lm_tfg__tratamiento) # p-value > 0.05
+
+
+Analysis of Variance Table
+
+Model 1: TFGCKD ~ BUN + COLESTEROL
+Model 2: TFGCKD ~ BUN + COLESTEROL + TRATAMIENTO
+  Res.Df    RSS Df Sum of Sq     F  Pr(>F)  
+1     27 9525.9                             
+2     25 7591.6  2    1934.3 3.185 0.05859 .
+
+
+
+lm_tfg__categorical = lm(TFGCKD ~ BUN + COLESTEROL  , data = data)
+lm_tfg__categorical_sexo = lm(TFGCKD ~ BUN + COLESTEROL + SEXO  , data = data)
+anova(lm_tfg__categorical, lm_tfg__categorical_sexo)
+
+Analysis of Variance Table
+
+Model 1: TFGCKD ~ BUN + COLESTEROL
+Model 2: TFGCKD ~ BUN + COLESTEROL + SEXO
+  Res.Df    RSS Df Sum of Sq      F  Pr(>F)  
+1     27 9525.9                              
+2     26 8419.8  1    1106.2 3.4158 0.07598 .
+
+lm_tfg__categorical = lm(TFGCKD ~ BUN + COLESTEROL  , data = data)
+lm_tfg__categorical_pie = lm(TFGCKD ~ BUN + COLESTEROL + PIEDIABETICO  , data = data)
+anova(lm_tfg__categorical, lm_tfg__categorical_pie)
+
+Analysis of Variance Table
+
+Model 1: TFGCKD ~ BUN + COLESTEROL
+Model 2: TFGCKD ~ BUN + COLESTEROL + PIEDIABETICO
+  Res.Df    RSS Df Sum of Sq      F  Pr(>F)  
+1     27 9525.9                              
+2     26 7906.7  1    1619.3 5.3247 0.02924 *
+
+
+# PIE Diabetico is a categorical variable that increment the significance
+summary(lm_tfg__categorical_pie)
+
+
+Call:
+lm(formula = TFGCKD ~ BUN + COLESTEROL + PIEDIABETICO, data = data)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-34.306 -10.126  -0.371   9.291  32.371 
+
+Coefficients:
+                         Estimate Std. Error t value Pr(>|t|)    
+(Intercept)             185.65911   14.68282  12.645  1.3e-12 ***
+BUN                      -2.07843    0.18356 -11.323  1.5e-11 ***
+COLESTEROL               -0.41600    0.09585  -4.340 0.000192 ***
+PIEDIABETICONEUROPATICO  15.45175    6.69622   2.308 0.029243 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 17.44 on 26 degrees of freedom
+Multiple R-squared:  0.8617,	Adjusted R-squared:  0.8458 
+F-statistic: 54.01 on 3 and 26 DF,  p-value: 2.641e-11
+
+
+# test normalidad
+shapiro.test(lm_tfg__categorical_pie$residuals)
+
+Shapiro-Wilk normality test
+
+data:  lm_tfg__categorical_pie$residuals
+W = 0.98229, p-value = 0.8826
+
+
+# test homocedasticidad 
+ncvTest(lm_tfg__categorical_pie)
+
+Non-constant Variance Score Test 
+Variance formula: ~ fitted.values 
+Chisquare = 0.1626219    Df = 1     p = 0.686754 
+
+gvmodel <- gvlma(lm_tfg__categorical_pie) 
+summary(gvmodel)
+
+ASSESSMENT OF THE LINEAR MODEL ASSUMPTIONS
+USING THE GLOBAL TEST ON 4 DEGREES-OF-FREEDOM:
+Level of Significance =  0.05 
+
+Call:
+ gvlma(x = lm_tfg__categorical_pie) 
+
+                    Value p-value                Decision
+Global Stat        1.7262  0.7860 Assumptions acceptable.
+Skewness           0.1683  0.6817 Assumptions acceptable.
+Kurtosis           0.2088  0.6477 Assumptions acceptable.
+Link Function      0.7465  0.3876 Assumptions acceptable.
+Heteroscedasticity 0.6027  0.4376 Assumptions acceptable.
+
+# test anova 
+anova(lm_tfg__categorical_pie)
+
+Analysis of Variance Table
+
+Response: TFGCKD
+             Df Sum Sq Mean Sq  F value    Pr(>F)    
+BUN           1  42091   42091 138.4090 6.492e-12 ***
+COLESTEROL    1   5561    5561  18.2854 0.0002268 ***
+PIEDIABETICO  1   1619    1619   5.3247 0.0292426 *  
+Residuals    26   7907     304                       
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+

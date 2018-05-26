@@ -1,0 +1,194 @@
+---
+title: "Mínimos cuadrados generalizados y ponderados"
+output: 
+  learnr::tutorial:
+    progressive: true
+    allow_skip: true
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+library(nlme)
+data(longley) 
+g <- lm(Employed ~ GNP + Population, data=longley)
+V<-diag(16)
+V<-0.3104092^abs(row(V)-col(V))
+X<-model.matrix(g)
+V.inv<-solve(V)
+beta<-solve(t(X)%*%V.inv%*%X)%*%t(X)%*%V.inv%*%longley$Empl
+res<-longley$Empl-X%*%beta
+knitr::opts_chunk$set(echo = FALSE)
+
+```
+
+
+# **Mínimos cuadrados generalizados** 
+
+## *Longley*
+
+Para ilustrar la metodología usaremos una base de datos incorporada en R llamada datos de la regresión de Longley donde la variable respuesta es el número de personas empleadas anualmente (`Employed`) del 1947 hasta 1962 y utilizaremos como variables predictoras el deflactor del precio implícito (`GNP` en español PIB) que en (1954=100) y la población (`Population`) no institucionalizado de 14 o más años de edad. Los datos aparecieron originalmente en Longley (1967).
+
+Uno de los principales problemas en la economía es evaluar el crecimiento económico, es decir, el valor de los bienes y servicios producidos por una economía a lo largo del tiempo. El principal escollo para medir esto es la distorsión que genera el incremento de los precios y su repercusión sobre el valor de lo producido, conocido como inflación.
+
+Para evaluar el crecimiento real, y no sólo de su valor, se utiliza el producto interior bruto real, en el que se consideran sólo las variaciones de las cantidades producidas en términos reales. Para ello se hace necesario eliminar el efecto de los precios sobre la economía. Por tanto es necesario el ajuste a través de un deflactor.
+
+Un deflactor es un índice de precios, simple o compuesto, que permite desagregar las series en sus dos componentes de precios y cantidades.
+
+El ejemplo más útil es el Deflactor del PIB que resulta ser el cociente entre el PIB nominal y el PIB real, expresado en forma de Índice, o la relación entre el valor del PIB del año en curso y el valor del PIB del año base. El deflactor del PIB entonces sirve para medir el crecimiento económico real -no meramenente nominal- de una economía.
+
+El modelo lineal ajustado fue el siguiente:
+
+
+```{r code1, exercise=TRUE} 
+data(longley) 
+g <- lm(Employed ~ GNP + Population, data=longley)
+summary(g,cor=T)
+
+```
+
+Comparando la correlación entre las variables `GNP` y `Population` y sus correpondientes coeficientes. Podemos apreciar que  están altamente correlacionados negativamente.
+
+En datos colectados a través del tiempo tales como estos, los errores sucesivos podrían estar correlacionados. Asumiendo que los errores toman una forma  autoregresiva simple:
+
+$$\varepsilon_{i+1}=\rho \varepsilon_{i}+\delta_i \quad \delta_i \sim N(0,\tau^2)$$
+El grafico de los residuales a través del tiempo es el siguiente:
+
+```{r code14, exercise=TRUE} 
+plot(seq(1:16),res, pch=16, xlab="t", ylab=expression(widehat(paste(epsilon))))
+abline(h=0,lty=2)
+```
+
+Se puede estimar la correlación $\rho$ por medio de la correlación de una muestra de residuales
+
+```{r code2, exercise=TRUE} 
+cor(g$res[-1],g$res[-16])
+```
+
+Notese que:
+
+```{r code3, exercise=TRUE} 
+g$res
+g$res[-1]
+g$res[-16]
+```
+
+Por simplicidad, se puede construir la matriz de covarianza del error $\textbf{V}_{ij}=\rho^{|i-j|}$. Asumiendo que se conoce $\rho=0.3104$. Luego $\textbf{V}$ es calculada de la siguiente forma:
+
+```{r code4, exercise=TRUE} 
+V<-diag(16)
+V<-0.3104092^abs(row(V)-col(V))
+V
+```
+
+y el estimador de mínimos cuadrados generalizados de $\widehat{\boldsymbol{\beta}}=\left(\boldsymbol{X}^{\top} \textbf{V}^{-1} \boldsymbol{X}\right)^{-1}\boldsymbol{X}^{\top} \textbf{V}^{-1} \boldsymbol{y}$ es
+
+```{r code5, exercise=TRUE} 
+g <- lm(Employed ~ GNP + Population, data=longley)
+X<-model.matrix(g)
+V.inv<-solve(V)
+beta<-solve(t(X)%*%V.inv%*%X)%*%t(X)%*%V.inv%*%longley$Empl
+beta
+```
+
+El error estandar de $\widehat{\boldsymbol{\beta}}$, $\sqrt{Var(\widehat{\boldsymbol{\beta}})}=\sqrt{\sigma^2 \left( \boldsymbol{X}^{\top} \textbf{V}^{-1} \boldsymbol{X}\right)^{-1}}$ es
+
+```{r code6, exercise=TRUE} 
+res<-longley$Empl-X%*%beta
+sig<-sum(res^2)/g$df
+sqrt(diag(solve(t(X)%*%V.inv%*%X))*sig)
+```
+
+En la práctica no se conoce que $\rho=0.31$ y tiene que estimarse desde los datos. El estimado inicial es 0.31, pero una vez ajustado nuestro modelo por el método de mínimos cuadrados generalizado se necesita re-estimar este coeficiente mediante:
+
+```{r code7, exercise=TRUE} 
+res<-longley$Empl-X%*%beta
+cor(res[-1],res[-16])
+```
+
+y entonces ajustamos el modelo otra vez con $\rho=0.35642$. Este proceso sería iterado hasta la convergencia.
+
+Otra opción es usar el paquete `nlme()`, que contiene la función `gls()`. Podemos usar dicha función de la siguiente forma:
+
+```{r code8, exercise=TRUE} 
+g<-gls(Employed~GNP+Population,correlation=corAR1(form=~Year),data=longley)
+summary(g)
+```
+
+Se observa que el valor estimado de $\rho$ es 0.64. Sin embargo, al encontrar los intervalos de la confianza para corroborar esto:
+
+```{r code9, exercise=TRUE} 
+g<-gls(Employed~GNP+Population,correlation=corAR1(form=~Year),data=longley)
+intervals(g)
+```
+
+Se observa que no es significativamente diferente de cero.
+
+# **Mínimos cuadrados ponderados** 
+
+## *Ventas*
+
+A un analista de ventas le gustaría encontrar la relación entre la renta mensual media de ventas de comidas (Y) y el gasto mensual empleado en propaganda (X). Los datos de 30 restaurantes son los siguientes
+
+
+```{r code10, exercise=TRUE} 
+GastoX <- c(3, 3,	3, 5,	5, 5,	9, 9,	9, 9,	9, 12, 12,	12,	12,	12,	12,	15,	15,	15,	15,	15,	15,	17,	17,	17,	19,	19,	19,	19)
+VendaY <- c(81, 73,	72,	91,	99,	97,	127, 114,	116, 123,	131, 141,	151, 147,	131, 145,	147,	179, 166,	181, 178,	185, 156,	176, 189,	192, 203, 193, 219, 214)
+cbind(GastoX,VendaY)
+```
+
+Ajustando el modelo usando mínimos cuadrados ordinarios obtenemos lo siguiente
+
+```{r code11, exercise=TRUE} 
+GastoX <- c(3, 3,	3, 5,	5, 5,	9, 9,	9, 9,	9, 12, 12,	12,	12,	12,	12,	15,	15,	15,	15,	15,	15,	17,	17,	17,	19,	19,	19,	19)
+VendaY <- c(81, 73,	72,	91,	99,	97,	127, 114,	116, 123,	131, 141,	151, 147,	131, 145,	147,	179, 166,	181, 178,	185, 156,	176, 189,	192, 203, 193, 219, 214)
+ajuste = lm(VendaY ~ GastoX)
+summary(ajuste)
+plot(VendaY ~ GastoX, xlab="Gasto", ylab="Ventas")
+abline(ajuste)
+windows()
+par(mfrow=c(1,2))
+plot(fitted(ajuste),residuals(ajuste),xlab="Valores Ajustados",ylab="Residuos")
+abline(h=0)
+plot(GastoX,residuals(ajuste),xlab="Gasto",ylab="Residuos")
+abline(h=0)
+windows()
+par(mfrow=c(1,2))
+hist(residuals(ajuste), xlab="Residuos",ylab="Frequencia",main="")
+qqnorm(residuals(ajuste), ylab="Residuos",main="")
+qqline(residuals(ajuste))
+```
+
+Luego la ecuación de la recta ajusta s dada por $\widehat{Y}_i=50.785+8.082 X_i$.
+
+Se puede apreciar en los gráficos que los residuos no se distribuyen homogeneamente alrededor de cero a lo largo de los valores ajustados de las ventas y alrededor de los valores de los gastos, en ambos casos la variabilidad de los residuos crece, lo que indica que la varianza de los errores no es constante.
+
+Para corregir el problema de la heteroscedasticidad de los errores, se debe realizar un ajuste del modelo utilizando mínimos cuadrados ponderados. Para ello vamos a realizar un gráfico de la varianza para cada nivel de $X.
+
+```{r code12, exercise=TRUE} 
+GastoX <- c(3, 3,	3, 5,	5, 5,	9, 9,	9, 9,	9, 12, 12,	12,	12,	12,	12,	15,	15,	15,	15,	15,	15,	17,	17,	17,	19,	19,	19,	19)
+VendaY <- c(81, 73,	72,	91,	99,	97,	127, 114,	116, 123,	131, 141,	151, 147,	131, 145,	147,	179, 166,	181, 178,	185, 156,	176, 189,	192, 203, 193, 219, 214)
+gastovenda <- cbind(GastoX,VendaY)
+v <- tapply(gastovenda[,2],as.factor(gastovenda[,1]),var)
+gasto <- unique(GastoX, fromLast = TRUE)
+plot(gasto,v,xlab="Gasto",ylab="varianza (Venta|Gasto)" )
+```
+
+la figura muestra que $Var(Ventas|Gasto)$ es proporcional al Gasto. En ese caso el peso $v_i$ debe ser inversamente proporcional a $X_i$. De esta forma ajustamos el modelo de mínimos cuadrados ponderados:
+
+```{r code13, exercise=TRUE} 
+GastoX <- c(3, 3,	3, 5,	5, 5,	9, 9,	9, 9,	9, 12, 12,	12,	12,	12,	12,	15,	15,	15,	15,	15,	15,	17,	17,	17,	19,	19,	19,	19)
+VendaY <- c(81, 73,	72,	91,	99,	97,	127, 114,	116, 123,	131, 141,	151, 147,	131, 145,	147,	179, 166,	181, 178,	185, 156,	176, 189,	192, 203, 193, 219, 214)
+ajuste_ponderado <- lm(VendaY ~ GastoX, weights = 1/GastoX)
+summary(ajuste_ponderado)
+anova(ajuste_ponderado)
+
+windows()
+par(mfrow=c(1,2))
+plot(fitted(ajuste_ponderado),residuals(ajuste_ponderado)*sqrt(1/GastoX),xlab="Valores Ajustados",ylab="Residuos")
+abline(h=0)
+plot(GastoX,residuals(ajuste_ponderado)*sqrt(1/GastoX),xlab="Gasto",ylab="Residuos")
+abline(h=0)
+```
+
+Puede apreciarse que el problema de heterocedasticidad de elos errores fue resuelto.
